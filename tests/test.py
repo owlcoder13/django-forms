@@ -1,3 +1,9 @@
+import os, sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from forms import forms
+
+
 #
 # class JobForm(Form):
 #     name = Field()
@@ -32,3 +38,11 @@
 # form.save()
 # print(form.render())
 # print(item)
+
+class Form1(forms.Form):
+    name = forms.Field()
+    description = forms.TextAreaField()
+
+
+model = forms.FormModel()
+form = Form1(instance=model)
