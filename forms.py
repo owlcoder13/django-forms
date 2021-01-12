@@ -215,7 +215,7 @@ class BootstrapFormRenderer(object):
             'id': field.id
         }
 
-        return '<div class="form-group">%s%s%s</div>' % (
+        return '<div class="mb-3">%s%s%s</div>' % (
             field.render_label(),
             field.render_control(extra_attributes=extra_attributes),
             field.render_errors()
@@ -326,6 +326,11 @@ class Form(object, metaclass=FormMeta):
     def render(self):
         return self.renderer.render_form(self)
 
+    def add_error(self, attribute=None, error=None):
+        if attribute not in self.errors:
+            self.errors[attribute] = list()
+        self.errors[attribute].append(error)
+
     def is_valid(self):
         valid = True
 
@@ -333,9 +338,7 @@ class Form(object, metaclass=FormMeta):
             try:
                 f.validate()
             except ValidationError as err:
-                if f not in self.errors:
-                    self.errors[f] = list()
-                self.errors[f].append(err)
+                self.add_error(err)
 
         return valid
 
