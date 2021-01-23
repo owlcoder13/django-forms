@@ -395,7 +395,14 @@ class SelectField(Field):
 
         super(SelectField, self).__init__(*args, **kwargs)
 
-        self.template = 'forms/select.html'
+        self.template = 'forms/select.html' 
+
+
+    def render_control(self, extra_attributes=None):
+        attributes = self.attributes or dict()
+        attributes.update(extra_attributes or dict())
+
+        return HtmlHelper.select(self.name, self.value, self.options, attributes)
 
 
 class UrlField(Field):
