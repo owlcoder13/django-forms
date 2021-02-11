@@ -694,6 +694,14 @@ class TextAreaField(Field):
 
         return HtmlHelper.textarea(self.name, self.value, attributes)
 
+class FileField(Field):
+    def render_control(self, extra_attributes=None):
+        attributes = self.attributes or dict()
+        attributes.update(extra_attributes or dict())
+        attributes['type'] = 'file'
+
+        return HtmlHelper.input(self.name, self.value, attributes)
+
 
 class EditorField(TextAreaField):
     @property
