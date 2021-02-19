@@ -38,7 +38,9 @@ class Field(object):
     Base field class for all derived classes
     """
 
-    def __init__(self, files=None, data=None, instance=None, label=None, attributes=None, attribute=None):
+    def __init__(self, files=None, data=None, instance=None, label=None,
+                 attributes=None, attribute=None, form=None,
+                 input_type='text', required=False):
         self.instance = instance
         self.data = data
         self.files = files
@@ -47,6 +49,8 @@ class Field(object):
         self.attribute = attribute
         self.value = None
         self.prefix = ''
+        self.form = form
+        self.required = required
 
         self.attributes = attributes or dict()
 
@@ -88,9 +92,13 @@ class Field(object):
         }
 
     def collect_attributes(self, extra_attributes=None):
-        attributes = self.attributes or dict()
+        attributes = dict()
+
         attributes.update(self.get_control_attributes())
         attributes.update(extra_attributes or dict())
+
+        if self.attributes:
+            attributes.update(self.attributes)
 
         return attributes
 
@@ -98,9 +106,12 @@ class Field(object):
         return HtmlHelper.input(self.name, self.value, self.collect_attributes(extra_attributes))
 
     def render_label(self):
-        return HtmlHelper.tag('label', self.label)
+        return HtmlHelper.tag('label', self.label, {'class': 'form-label'})
 
     def render_errors(self):
+        if self.attribute in self.form.errors:
+            return self.form.renderer.render_errors(self, self.form.errors[self.attribute])
+
         return ''
 
     def render(self, extra_input_attributes=None):
@@ -123,14 +134,27 @@ class Field(object):
         pass
 
     def validate(self):
-        return True
+        if self.required and (self.value is None or self.value == ''):
+            raise ValidationError('field %s is required' % self.label)
 
     @property
     def js(self):
         return ''
 
     def fetch(self):
-        self.value = getattr(self.instance, self.attribute)
+        if hasattr(self.instance, self.attribute):
+            self.value = getattr(self.instance, self.attribute)
+
+
+class InputField(Field):
+    def __init__(self, *args, input_type='text', **kwargs):
+        self.input_type = input_type
+        super(InputField, self).__init__(*args, **kwargs)
+
+    def render(self, extra_input_attributes=None):
+        extra_input_attributes = extra_input_attributes or dict()
+        extra_input_attributes['type'] = self.input_type
+        return super(InputField, self).render(extra_input_attributes=extra_input_attributes)
 
 
 class NestedFormField(Field):
@@ -138,11 +162,12 @@ class NestedFormField(Field):
         super().__init__(*args, **kwargs)
 
         self.form_class = form_class
-        self.form = None
 
     def fetch(self):
         f = self.form.instance._meta.get_field(self.attribute)
-        instance = getattr(self.instance, f.name)
+
+        if hasattr(self.instance, f.name):
+            instance = getattr(self.instance, f.name)
 
         try:
             instance = instance.get()
@@ -194,8 +219,13 @@ class ColorField(Field):
 
 
 class BootstrapFormRenderer(object):
+    form_group_class = "form-group"
+
     def __init__(self, form):
         self.form = form
+
+    def render_errors(self, field, errors):
+        return HtmlHelper.tag('div', ', '.join(errors), {'class': 'form-error'})
 
     def render_form(self, field):
         out = list()
@@ -215,7 +245,8 @@ class BootstrapFormRenderer(object):
             'id': field.id
         }
 
-        return '<div class="form-group">%s%s%s</div>' % (
+        return '<div class="%s">%s%s%s</div>' % (
+            self.form_group_class,
             field.render_label(),
             field.render_control(extra_attributes=extra_attributes),
             field.render_errors()
@@ -326,6 +357,12 @@ class Form(object, metaclass=FormMeta):
     def render(self):
         return self.renderer.render_form(self)
 
+    def add_field_error(self, field, error):
+        if field not in self.errors:
+            self.errors[field] = list()
+
+        self.errors[field].append(error)
+
     def is_valid(self):
         valid = True
 
@@ -333,11 +370,10 @@ class Form(object, metaclass=FormMeta):
             try:
                 f.validate()
             except ValidationError as err:
-                if f not in self.errors:
-                    self.errors[f] = list()
-                self.errors[f].append(err)
+                valid = False
+                self.add_field_error(f.name, str(err))
 
-        return valid
+        return valid and len(self.errors.items()) == 0
 
     def __str__(self):
         return self.render()
@@ -663,10 +699,7 @@ class JsField(Field):
 
 class TextAreaField(Field):
     def render_control(self, extra_attributes=None):
-        attributes = self.attributes or dict()
-        attributes.update(extra_attributes or dict())
-
-        return HtmlHelper.textarea(self.name, self.value, attributes)
+        return HtmlHelper.textarea(self.name, self.value, self.collect_attributes(extra_attributes))
 
 
 class EditorField(TextAreaField):
