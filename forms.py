@@ -505,9 +505,9 @@ class FormsetField(Field):
         hidden_form = HtmlHelper.tag('div', self.hidden_form.render())
 
         buttons = HtmlHelper.tag('a', 'add new row', {
-                                 'class': 'add', 'href': '#'})
+            'class': 'add', 'href': '#'})
         container = HtmlHelper.tag('div', ''.join(forms), {
-                                   'class': 'container'})
+            'class': 'container'})
         hidden = HtmlHelper.tag('div', hidden_form, {'class': 'hidden'})
 
         return HtmlHelper.tag('div', container + hidden + buttons, {'id': self.id})
@@ -662,9 +662,9 @@ class TableFormsetField(FormsetField):
         hidden_form = HtmlHelper.tag('tr', self.hidden_form.render())
 
         buttons = HtmlHelper.tag('a', 'add new row', {
-                                 'class': 'add', 'href': '#'})
+            'class': 'add', 'href': '#'})
         container = HtmlHelper.tag('table', ''.join(forms), {
-                                   'class': 'container'})
+            'class': 'container'})
         hidden = HtmlHelper.tag('table', hidden_form, {'class': 'hidden'})
 
         return HtmlHelper.tag('div', container + hidden, {'id': self.id}) + buttons
@@ -693,6 +693,7 @@ class TextAreaField(Field):
         attributes.update(extra_attributes or dict())
 
         return HtmlHelper.textarea(self.name, self.value, attributes)
+
 
 class FileField(Field):
     def render_control(self, extra_attributes=None):
