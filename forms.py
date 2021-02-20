@@ -40,7 +40,7 @@ class Field(object):
 
     def __init__(self, files=None, data=None, instance=None, label=None,
                  attributes=None, attribute=None, form=None,
-                 input_type='text', required=False):
+                 input_type='text', required=False, apply=True):
         self.instance = instance
         self.data = data
         self.files = files
@@ -51,11 +51,13 @@ class Field(object):
         self.prefix = ''
         self.form = form
         self.required = required
+        self.can_apply = apply
 
         self.attributes = attributes or dict()
 
     def apply(self):
-        setattr(self.instance, self.attribute, self.value)
+        if self.can_apply:
+            setattr(self.instance, self.attribute, self.value)
 
     def init(self):
         pass
@@ -174,7 +176,12 @@ class NestedFormField(Field):
         except f.related_model.DoesNotExist:
             instance = f.related_model()
 
-        self.form = self.form_class(prefix=self.prefix + '-', instance=instance, parent_form=self.form)
+        # create nested form for rendering
+        self.form = self.form_class(
+            prefix=self.prefix + '-',
+            instance=instance,
+            parent_form=self.form
+        )
 
     def render_control(self, extra_attributes=None):
         return self.form.render()
@@ -327,7 +334,8 @@ class Form(object, metaclass=FormMeta):
                 }
 
             if 'fields' in field_description:
-                field_description['fields'] = self.normalize_field_config(field_description['fields'])
+                field_description['fields'] = self.normalize_field_config(
+                    field_description['fields'])
 
             if 'classname' not in field_description:
                 field_description['classname'] = Field
@@ -430,6 +438,12 @@ class SelectField(Field):
 
         self.template = 'forms/select.html'
 
+    def render_control(self, extra_attributes=None):
+        attributes = self.attributes or dict()
+        attributes.update(extra_attributes or dict())
+
+        return HtmlHelper.select(self.name, self.value, self.options, attributes)
+
 
 class UrlField(Field):
     pass
@@ -500,11 +514,12 @@ class FormsetField(Field):
         self.form_class = form_class
 
     def set_relative_fields(self, instance):
-        f = self.form.instance._meta.get_field(self.attribute)
+        f = self.parent_form.instance._meta.get_field(self.attribute)
         setattr(instance, f.field.name, self.form.instance)
 
     def fetch(self):
-        hidden_form = self.create_child_form('__index__', self.create_new_instance())
+        hidden_form = self.create_child_form(
+            '__index__', self.create_new_instance())
         self.hidden_form = hidden_form
 
         self.init_forms()
@@ -518,12 +533,15 @@ class FormsetField(Field):
         return attr_value
 
     def render_control(self, extra_attributes=None):
-        forms = [HtmlHelper.tag('div', f.render()) for _, f in self.forms.items()]
+        forms = [HtmlHelper.tag('div', f.render())
+                 for _, f in self.forms.items()]
 
         hidden_form = HtmlHelper.tag('div', self.hidden_form.render())
 
-        buttons = HtmlHelper.tag('a', 'add new row', {'class': 'add', 'href': '#'})
-        container = HtmlHelper.tag('div', ''.join(forms), {'class': 'container'})
+        buttons = HtmlHelper.tag('a', 'add new row', {
+            'class': 'add', 'href': '#'})
+        container = HtmlHelper.tag('div', ''.join(forms), {
+            'class': 'container'})
         hidden = HtmlHelper.tag('div', hidden_form, {'class': 'hidden'})
 
         return HtmlHelper.tag('div', container + hidden + buttons, {'id': self.id})
@@ -540,7 +558,8 @@ class FormsetField(Field):
 
         fields_js = list()
         for _, f in self.hidden_form.fields.items():
-            fields_js.append("(function (el) { %s })($('#%s'.replace('__index__', i)));" % (f.js, f.id))
+            fields_js.append(
+                "(function (el) { %s })($('#%s'.replace('__index__', i)));" % (f.js, f.id))
 
         return '''
             let i = {max_index};
@@ -635,18 +654,20 @@ class FormsetField(Field):
                 new_forms[str_index] = self.forms[str_index]
                 new_forms[str_index].load(data, files)
             except KeyError:
-                new_forms[str_index] = self.create_child_form(index, self.create_new_instance())
+                new_forms[str_index] = self.create_child_form(
+                    index, self.create_new_instance())
                 new_forms[str_index].load(data, files)
 
         self.forms = new_forms
 
     def nested_form_prefix(self, index):
-        return self.form.prefix + self.attribute + '-' + str(index) + '-'
+        return self.parent_form.prefix + self.attribute + '-' + str(index) + '-'
 
     def create_child_form(self, index, instance=None):
         form_prefix = self.nested_form_prefix(index)
         form_class = self.form_class
-        new_form = form_class(instance=instance, prefix=form_prefix, parent_form=self.form)
+        new_form = form_class(
+            instance=instance, prefix=form_prefix, parent_form=self.form)
         return new_form
 
     def after_save(self):
@@ -669,12 +690,15 @@ class FormsetField(Field):
 
 class TableFormsetField(FormsetField):
     def render_control(self, extra_attributes=None):
-        forms = [HtmlHelper.tag('tr', f.render()) for _, f in self.forms.items()]
+        forms = [HtmlHelper.tag('tr', f.render())
+                 for _, f in self.forms.items()]
 
         hidden_form = HtmlHelper.tag('tr', self.hidden_form.render())
 
-        buttons = HtmlHelper.tag('a', 'add new row', {'class': 'add', 'href': '#'})
-        container = HtmlHelper.tag('table', ''.join(forms), {'class': 'container'})
+        buttons = HtmlHelper.tag('a', 'add new row', {
+            'class': 'add', 'href': '#'})
+        container = HtmlHelper.tag('table', ''.join(forms), {
+            'class': 'container'})
         hidden = HtmlHelper.tag('table', hidden_form, {'class': 'hidden'})
 
         return HtmlHelper.tag('div', container + hidden, {'id': self.id}) + buttons
@@ -700,6 +724,15 @@ class JsField(Field):
 class TextAreaField(Field):
     def render_control(self, extra_attributes=None):
         return HtmlHelper.textarea(self.name, self.value, self.collect_attributes(extra_attributes))
+
+
+class FileField(Field):
+    def render_control(self, extra_attributes=None):
+        attributes = self.attributes or dict()
+        attributes.update(extra_attributes or dict())
+        attributes['type'] = 'file'
+
+        return HtmlHelper.input(self.name, self.value, attributes)
 
 
 class EditorField(TextAreaField):

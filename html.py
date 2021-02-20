@@ -71,3 +71,24 @@ class HtmlHelper(object):
         })
 
         return cls.tag('textarea', value, attributes)
+
+    @classmethod
+    def select(cls, name=None, value=None, options=None, attributes=None):
+        if options is None:
+            options = list()
+
+        render_options = []
+
+        for key, text in options:
+            option = HtmlHelper.tag('option', text, {
+                "value": key, "selected": value == key
+            })
+            render_options.append(option)
+
+        attributes = attributes or dict()
+
+        attributes.update({
+            "name": name,
+        })
+
+        return cls.tag('select', ''.join(render_options), attributes)
