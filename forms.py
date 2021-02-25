@@ -514,7 +514,7 @@ class FormsetField(Field):
         self.form_class = form_class
 
     def set_relative_fields(self, instance):
-        f = self.parent_form.instance._meta.get_field(self.attribute)
+        f = self.form.instance._meta.get_field(self.attribute)
         setattr(instance, f.field.name, self.form.instance)
 
     def fetch(self):
@@ -544,13 +544,13 @@ class FormsetField(Field):
             'class': 'container'})
         hidden = HtmlHelper.tag('div', hidden_form, {'class': 'hidden'})
 
-        return HtmlHelper.tag('div', container + hidden + buttons, {'id': self.id})
+        return HtmlHelper.tag('div', container + hidden + buttons, self.collect_attributes({'id': self.id}))
 
     @property
     def js(self):
         # get maximum form index
         form_indexes = [int(a) for a in self.forms.keys()]
-        max_index = max(form_indexes) + 1
+        max_index = max(form_indexes) if len(form_indexes) > 0 + 1 else 0
 
         forms_js = list()
         for _, f in self.forms.items():
@@ -661,7 +661,7 @@ class FormsetField(Field):
         self.forms = new_forms
 
     def nested_form_prefix(self, index):
-        return self.parent_form.prefix + self.attribute + '-' + str(index) + '-'
+        return self.form.prefix + self.attribute + '-' + str(index) + '-'
 
     def create_child_form(self, index, instance=None):
         form_prefix = self.nested_form_prefix(index)
@@ -727,12 +727,29 @@ class TextAreaField(Field):
 
 
 class FileField(Field):
+
+    def set_value_from_data(self):
+        key = self.prefix + self.attribute
+        self.value = self.files[key] if key in self.files else None
+
+    def apply(self):
+        if self.can_apply and self.value:
+            setattr(self.instance, self.attribute, self.value)
+
+    def render_existing_value(self):
+        f = self.value.url if self.value else ''
+        return HtmlHelper.tag('a', f, {'href': f, 'target': '_blank'})
+
     def render_control(self, extra_attributes=None):
         attributes = self.attributes or dict()
         attributes.update(extra_attributes or dict())
         attributes['type'] = 'file'
 
-        return HtmlHelper.input(self.name, self.value, attributes)
+        render_input = HtmlHelper.input(self.name, self.value, attributes)
+
+        wrapper = HtmlHelper.tag('div', self.render_existing_value() + render_input)
+
+        return wrapper
 
 
 class EditorField(TextAreaField):
