@@ -153,10 +153,10 @@ class InputField(Field):
         self.input_type = input_type
         super(InputField, self).__init__(*args, **kwargs)
 
-    def render(self, extra_input_attributes=None):
-        extra_input_attributes = extra_input_attributes or dict()
-        extra_input_attributes['type'] = self.input_type
-        return super(InputField, self).render(extra_input_attributes=extra_input_attributes)
+    def collect_attributes(self, extra_attributes=None):
+        attributes = super(InputField, self).collect_attributes(extra_attributes)
+        attributes['type'] = self.input_type
+        return attributes
 
 
 class NestedFormField(Field):
