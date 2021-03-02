@@ -137,7 +137,12 @@ class Field(object):
 
     def validate(self):
         if self.required and (self.value is None or self.value == ''):
-            raise ValidationError('field %s is required' % self.label)
+            if self.form is not None:
+                error_message = self.form.error_required_message
+            else:
+                error_message = 'Field %s is required'
+
+            raise ValidationError(error_message % self.label)
 
     @property
     def js(self):
@@ -227,12 +232,13 @@ class ColorField(Field):
 
 class BootstrapFormRenderer(object):
     form_group_class = "form-group"
+    form_error_class = 'form-error'
 
     def __init__(self, form):
         self.form = form
 
     def render_errors(self, field, errors):
-        return HtmlHelper.tag('div', ', '.join(errors), {'class': 'form-error'})
+        return HtmlHelper.tag('div', ', '.join(errors), {'class': self.form_error_class})
 
     def render_form(self, field):
         out = list()
@@ -407,6 +413,14 @@ class Form(object, metaclass=FormMeta):
 
     def after_save(self):
         pass
+
+    @property
+    def values(self):
+        out = dict()
+        for k, f in self.fields.items():
+            out[k] = f.value
+
+        return out
 
 
 class HiddenIdField(Field):
