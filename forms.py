@@ -567,7 +567,7 @@ class FormsetField(Field):
     def js(self):
         # get maximum form index
         form_indexes = [int(a) for a in self.forms.keys()]
-        max_index = max(form_indexes) if len(form_indexes) > 0 + 1 else 0
+        max_index = max(form_indexes) + 1 if len(form_indexes) > 0 else 0
 
         forms_js = list()
         for _, f in self.forms.items():
