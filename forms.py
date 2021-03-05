@@ -520,12 +520,15 @@ class CheckBoxField(Field):
 
 class FormsetField(Field):
 
-    def __init__(self, form_class=None, *args, **kwargs):
+    def __init__(self, form_class=None, text_delete='Delete row', text_add='Add new row', *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.hidden_form = None
         self.forms = dict()
         self.form_class = form_class
+
+        self.text_delete = text_delete
+        self.text_add = text_add
 
     def set_relative_fields(self, instance):
         f = self.form.instance._meta.get_field(self.attribute)
@@ -552,8 +555,8 @@ class FormsetField(Field):
 
         hidden_form = HtmlHelper.tag('div', self.hidden_form.render())
 
-        buttons = HtmlHelper.tag('a', 'add new row', {
-            'class': 'add', 'href': '#'})
+        buttons = HtmlHelper.tag('a', self.text_add, {
+            'class': 'add btn btn-success btn-sm mt-2', 'href': '#'})
         container = HtmlHelper.tag('div', ''.join(forms), {
             'class': 'container'})
         hidden = HtmlHelper.tag('div', hidden_form, {'class': 'hidden'})
@@ -586,7 +589,7 @@ class FormsetField(Field):
             hidden.hide()
             
             container.find('> *').each(function(indx, el){{
-                let delBtn = $('<button type="button">delete</button>');
+                let delBtn = $('<button type="button" class="btn btn-sm btn-danger">{text_delete}</button>');
                 
                 delBtn.on('click', () => {{
                     el.remove();
@@ -608,7 +611,7 @@ class FormsetField(Field):
                     }})
                 }})
                 
-                let delBtn = $('<button type="button">delete</button>');
+                let delBtn = $('<button type="button" class="btn btn-sm btn-danger">{text_delete}</button>');
                 
                 delBtn.on('click', () => {{
                     newForm.remove();
@@ -624,7 +627,9 @@ class FormsetField(Field):
         '''.format(id=self.id,
                    max_index=max_index,
                    init_nested_field=''.join(fields_js),
-                   forms_js=''.join(forms_js)
+                   forms_js=''.join(forms_js),
+                   text_delete=self.text_delete,
+                   text_add=self.text_add
                    )
 
     def init_forms(self):
