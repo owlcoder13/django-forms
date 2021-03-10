@@ -153,6 +153,26 @@ class Field(object):
             self.value = getattr(self.instance, self.attribute)
 
 
+class IntegerField(Field):
+
+    def validate(self):
+        try:
+            int(self.value)
+        except ValueError:
+            if self.form is not None:
+                error_message = self.form.error_integer_message
+            else:
+                error_message = 'Value of %s must be numerical'
+
+            raise ValidationError(error_message % self.label)
+
+    # def apply(self):
+    #     try:
+    #         setattr(self.instance, self.attribute, int(self.value))
+    #     except ValueError:
+    #         pass
+
+
 class InputField(Field):
     def __init__(self, *args, input_type='text', **kwargs):
         self.input_type = input_type
