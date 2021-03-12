@@ -52,6 +52,12 @@ class HtmlHelper(object):
         return cls.tag('div', content, attributes)
 
     @classmethod
+    def link(cls, label=None, href='#', attributes=None):
+        attributes = attributes or dict()
+        attributes['href'] = href
+        return cls.tag('a', label, attributes)
+
+    @classmethod
     def input(cls, name=None, value=None, attributes=None):
         attributes = attributes or dict()
 
