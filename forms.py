@@ -527,11 +527,13 @@ class CheckBoxField(Field):
         setattr(self.instance, self.attribute, checked)
 
     def render_control(self, extra_attributes=None):
+
         attributes = self.collect_attributes()
 
-        is_checked = True if self.value is True or self.value == 1 else False
+        is_checked = True if self.value is True or self.value == 1 or self.value == '1' else False
         attributes['checked'] = is_checked
         attributes['value'] = 1
+        print('self value', attributes)
         checked = HtmlHelper.tag('input', '', attributes)
 
         attributes = attributes.copy()
