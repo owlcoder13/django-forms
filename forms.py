@@ -40,7 +40,7 @@ class Field(object):
 
     def __init__(self, files=None, data=None, instance=None, label=None,
                  attributes=None, attribute=None, form=None,
-                 input_type='text', required=False, apply=True):
+                 input_type='text', required=False, apply=True, default_value=None):
         self.instance = instance
         self.data = data
         self.files = files
@@ -52,6 +52,7 @@ class Field(object):
         self.form = form
         self.required = required
         self.can_apply = apply
+        self.default_value = default_value
 
         self.attributes = attributes or dict()
 
@@ -151,6 +152,9 @@ class Field(object):
     def fetch(self):
         if hasattr(self.instance, self.attribute):
             self.value = getattr(self.instance, self.attribute)
+
+        if self.value is None and self.default_value is not None:
+            self.value = self.default_value
 
 
 class IntegerField(Field):
@@ -524,12 +528,13 @@ class CheckBoxField(Field):
 
     def render_control(self, extra_attributes=None):
         attributes = self.collect_attributes()
-        is_checked = True if self.value else False
+
+        is_checked = True if self.value is True or self.value == 1 else False
         attributes['checked'] = is_checked
         attributes['value'] = 1
-
         checked = HtmlHelper.tag('input', '', attributes)
 
+        attributes = attributes.copy()
         attributes['type'] = 'hidden'
         attributes['value'] = 0
         del attributes['checked']
