@@ -47,7 +47,10 @@ class Field(object):
         self.form = None
         self._label = label
         self.attribute = attribute
+
         self.value = None
+        self.old_value = None
+
         self.prefix = ''
         self.form = form
         self.required = required
@@ -155,6 +158,14 @@ class Field(object):
 
         if self.value is None and self.default_value is not None:
             self.value = self.default_value
+
+        self.set_old_value()
+
+    def has_changed(self):
+        return self.value != self.old_value
+
+    def set_old_value(self):
+        self.old_value = self.value
 
 
 class IntegerField(Field):
@@ -527,7 +538,6 @@ class CheckBoxField(Field):
         setattr(self.instance, self.attribute, checked)
 
     def render_control(self, extra_attributes=None):
-
         attributes = self.collect_attributes()
 
         is_checked = True if self.value is True or self.value == 1 or self.value == '1' else False
