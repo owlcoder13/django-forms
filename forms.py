@@ -600,21 +600,26 @@ class FormsetField(Field):
 
         return HtmlHelper.tag('div', container + hidden + buttons, self.collect_attributes({'id': self.id}))
 
-    @property
-    def js(self):
-        # get maximum form index
+    def get_max_index(self):
         form_indexes = [int(a) for a in self.forms.keys()]
-        max_index = max(form_indexes) + 1 if len(form_indexes) > 0 else 0
+        return max(form_indexes) + 1 if len(form_indexes) > 0 else 0
 
+    def collect_form_js(self):
         forms_js = list()
         for _, f in self.forms.items():
             forms_js.append(f.js)
 
+        return ''.join(forms_js)
+
+    def collect_fields_js(self):
         fields_js = list()
         for _, f in self.hidden_form.fields.items():
             fields_js.append(
                 "(function (el) { %s })($('#%s'.replace('__index__', i)));" % (f.js, f.id))
+        return ''.join(fields_js)
 
+    @property
+    def js(self):
         return '''
             let i = {max_index};
             let container = $('#{id} > .container')
@@ -662,9 +667,9 @@ class FormsetField(Field):
                 i++;
             }})
         '''.format(id=self.id,
-                   max_index=max_index,
-                   init_nested_field=''.join(fields_js),
-                   forms_js=''.join(forms_js),
+                   max_index=self.get_max_index(),
+                   init_nested_field=self.collect_fields_js(),
+                   forms_js=self.collect_form_js(),
                    text_delete=self.text_delete,
                    text_add=self.text_add
                    )
@@ -749,15 +754,73 @@ class TableFormsetField(FormsetField):
         forms = [HtmlHelper.tag('tr', f.render())
                  for _, f in self.forms.items()]
 
-        hidden_form = HtmlHelper.tag('tr', self.hidden_form.render())
+        hidden_form = HtmlHelper.tag('tbody', HtmlHelper.tag('tr', self.hidden_form.render()))
 
-        buttons = HtmlHelper.tag('a', 'add new row', {
+        buttons = HtmlHelper.tag('a', self.text_add, {
             'class': 'add', 'href': '#'})
+
         container = HtmlHelper.tag('table', ''.join(forms), {
             'class': 'container'})
+
         hidden = HtmlHelper.tag('table', hidden_form, {'class': 'hidden'})
 
-        return HtmlHelper.tag('div', container + hidden, {'id': self.id}) + buttons
+        return HtmlHelper.tag('div', container + hidden + buttons, {'id': self.id})
+
+    @property
+    def js(self):
+        return '''
+                let i = {max_index};
+                let container = $('#{id} > .container')
+                let button = $('#{id} > .add');
+                let hidden = $('#{id} > .hidden');
+
+                {forms_js}
+
+                hidden.hide()
+
+                container.find('> *').each(function(indx, el){{
+                    let delBtn = $('<button type="button" class="btn btn-sm btn-danger">{text_delete}</button>');
+
+                    delBtn.on('click', () => {{
+                        el.remove();
+                    }})
+
+                    $(el).append(delBtn);
+                }})
+
+                button.on('click', function(e) {{
+                    e.preventDefault();
+
+                    let newForm = hidden.find(' > tbody > tr ').clone();
+
+                    newForm.find('[name], [id]').each((index, item) => {{
+                        ['name', 'id'].forEach(attr => {{
+                            if($(item).attr(attr)){{
+                                $(item).attr(attr, $(item).attr(attr).replace(/__index__/g, i))
+                            }}
+                        }})
+                    }})
+
+                    let delBtn = $('<button type="button" class="btn btn-sm btn-danger align-end">{text_delete}</button>');
+
+                    delBtn.on('click', () => {{
+                        newForm.remove();
+                    }})
+
+                    newForm.append(delBtn);
+                    container.append(newForm);
+
+                    {init_nested_field}
+
+                    i++;
+                }})
+            '''.format(id=self.id,
+                       max_index=self.get_max_index(),
+                       init_nested_field=self.collect_fields_js(),
+                       forms_js=self.collect_form_js(),
+                       text_delete=self.text_delete,
+                       text_add=self.text_add
+                       )
 
     def create_child_form(self, index, instance=None):
         form_prefix = self.nested_form_prefix(index)
