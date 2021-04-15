@@ -1,5 +1,8 @@
 import re
 import copy
+
+from django.db.models import QuerySet
+
 from .html import HtmlHelper
 
 
@@ -211,30 +214,34 @@ class NestedFormField(Field):
         if hasattr(self.instance, f.name):
             instance = getattr(self.instance, f.name)
 
-        try:
-            instance = instance.get()
-        except f.related_model.DoesNotExist:
+            if isinstance(instance, QuerySet):
+                try:
+                    instance = instance.get()
+                except f.related_model.DoesNotExist:
+                    instance = f.related_model()
+        else:
             instance = f.related_model()
+        print(instance)
 
         # create nested form for rendering
-        self.form = self.form_class(
+        self.nested_form = self.form_class(
             prefix=self.prefix + '-',
             instance=instance,
             parent_form=self.form
         )
 
     def render_control(self, extra_attributes=None):
-        return self.form.render()
+        return self.nested_form.render()
 
     def apply(self):
         pass
 
     def load(self, data=None, files=None):
-        self.form.load(data, files)
+        self.nested_form.load(data, files)
 
     def after_save(self):
         self.set_relative_fields(self.form.instance)
-        self.form.save()
+        self.nested_form.save()
 
     def set_relative_fields(self, instance):
         f = self.form.instance._meta.get_field(self.attribute)
