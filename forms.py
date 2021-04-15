@@ -1,8 +1,6 @@
 import re
 import copy
-
 from django.db.models import QuerySet
-
 from .html import HtmlHelper
 
 
@@ -221,7 +219,6 @@ class NestedFormField(Field):
                     instance = f.related_model()
         else:
             instance = f.related_model()
-        print(instance)
 
         # create nested form for rendering
         self.nested_form = self.form_class(
