@@ -237,7 +237,7 @@ class NestedFormField(Field):
         self.nested_form.load(data, files)
 
     def after_save(self):
-        self.set_relative_fields(self.form.instance)
+        self.set_relative_fields(self.nested_form.instance)
         self.nested_form.save()
 
     def set_relative_fields(self, instance):
