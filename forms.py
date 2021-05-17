@@ -879,7 +879,3 @@ class EditorField(TextAreaField):
     @property
     def js(self):
         return "CKEDITOR.replace(el[0]);"
-
-
-def ImageField(label):
-    return None
