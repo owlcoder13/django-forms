@@ -4,6 +4,9 @@ import json
 class DynamicObject(object):
     """ model with all existing properties """
 
+    def __repr__(self):
+        return str(self._attrs)
+
     def __hasattr__(self):
         return True
 

@@ -228,7 +228,8 @@ class NestedFormField(Field):
         )
 
     def render_control(self, extra_attributes=None):
-        return self.nested_form.render()
+        return HtmlHelper.tag('div', self.nested_form.render(),
+                              {"style": "border-left: 4px solid #eee; padding-left: 20px;"})
 
     def apply(self):
         pass
@@ -704,8 +705,7 @@ class FormsetField(Field):
             if groups is not None:
                 index = groups.group(1)
                 if index not in forms_indexes:
-                    forms_indexes.append(index)
-        print('form indexes', forms_indexes)
+                    forms_indexes.append(index) 
 
         new_forms = dict()
 
@@ -879,3 +879,8 @@ class EditorField(TextAreaField):
     @property
     def js(self):
         return "CKEDITOR.replace(el[0]);"
+
+
+def generate_form_class(fields, base_class=Form):
+    """Create form class dynamically from fields"""
+    return type('_Form', (base_class,), fields)
