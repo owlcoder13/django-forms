@@ -603,7 +603,8 @@ class FormsetField(Field):
             'class': 'container'})
         hidden = HtmlHelper.tag('div', hidden_form, {'class': 'hidden'})
 
-        return HtmlHelper.tag('div', container + hidden + buttons, self.collect_attributes({'id': self.id}))
+        return HtmlHelper.tag('div', container + hidden + buttons,
+                              self.collect_attributes({'id': self.id}))
 
     def get_max_index(self):
         form_indexes = [int(a) for a in self.forms.keys()]
@@ -627,9 +628,9 @@ class FormsetField(Field):
     def js(self):
         return '''
             let i = {max_index};
-            let container = $('#{id} > .container')
-            let button = $('#{id} > .add');
-            let hidden = $('#{id} > .hidden');
+            let container = $(el).find('> .container')
+            let button = $(el).find('> .add');
+            let hidden = $(el).find('> .hidden');
             
             {forms_js}
             
@@ -653,7 +654,10 @@ class FormsetField(Field):
                 newForm.find('[name], [id]').each((index, item) => {{
                     ['name', 'id'].forEach(attr => {{
                         if($(item).attr(attr)){{
-                            $(item).attr(attr, $(item).attr(attr).replace(/__index__/g, i))
+                            let newAttr = $(item).attr(attr).replace(/__index__/, i);
+                            console.log('was value', $(item).attr(attr), 'replace with', newAttr)
+                            
+                            $(item).attr(attr, newAttr)
                         }}
                     }})
                 }})
@@ -668,6 +672,8 @@ class FormsetField(Field):
                 container.append(newForm);
                 
                 {init_nested_field}
+                
+                console.log('index', i)
                 
                 i++;
             }})
@@ -694,6 +700,9 @@ class FormsetField(Field):
         return instance
 
     def load(self, data=None, files=None):
+        self.data = data
+        self.files = files
+
         prefix_pattern = self.nested_form_prefix('__index__')
         pattern = re.escape(prefix_pattern)
         pattern = '^' + pattern.replace('__index__', '(\\d+)')
@@ -705,7 +714,7 @@ class FormsetField(Field):
             if groups is not None:
                 index = groups.group(1)
                 if index not in forms_indexes:
-                    forms_indexes.append(index) 
+                    forms_indexes.append(index)
 
         new_forms = dict()
 
