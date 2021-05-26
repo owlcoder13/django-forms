@@ -245,6 +245,10 @@ class NestedFormField(Field):
         f = self.form.instance._meta.get_field(self.attribute)
         setattr(instance, f.field.name, self.form.instance)
 
+    @property
+    def js(self):
+        return self.nested_form.js
+
 
 class GenericNestedForm(NestedFormField):
     """
@@ -510,9 +514,9 @@ class BooleanField(Field):
 
 
 class CheckBoxListField(Field):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, options=None, **kwargs):
+        self.options = options or list()
         super(CheckBoxListField, self).__init__(*args, **kwargs)
-        self.template = 'forms/checkbox-list-field.html'
 
     def create_context(self):
         context = super(CheckBoxListField, self).create_context()
@@ -529,6 +533,20 @@ class CheckBoxListField(Field):
         })
 
         return context
+
+    def get_options(self):
+        return self.options
+
+    def render_control(self, extra_attributes=None):
+        options = list()
+
+        for option in self.get_options():
+            input = HtmlHelper.tag('input', '', {
+                "type": "checkbox"
+            })
+            options.append(HtmlHelper.tag('li', input))
+
+        return HtmlHelper.tag('ul', ''.join(input))
 
 
 class CheckBoxField(Field):
