@@ -549,7 +549,8 @@ class CheckBoxListField(Field):
             input = HtmlHelper.tag('input', '', {
                 "type": "checkbox",
                 "value": id,
-                "name": attr_name
+                "name": attr_name,
+                "checked": id in self.value
             }) + ' ' + str(name)
             options.append(HtmlHelper.tag('li', input))
 
