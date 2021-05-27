@@ -537,16 +537,23 @@ class CheckBoxListField(Field):
     def get_options(self):
         return self.options
 
+    def load(self, data=None, files=None):
+        pass
+
     def render_control(self, extra_attributes=None):
         options = list()
 
-        for option in self.get_options():
+        attr_name = self.name
+
+        for id, name in self.get_options():
             input = HtmlHelper.tag('input', '', {
-                "type": "checkbox"
-            })
+                "type": "checkbox",
+                "value": id,
+                "name": attr_name
+            }) + ' ' + str(name)
             options.append(HtmlHelper.tag('li', input))
 
-        return HtmlHelper.tag('ul', ''.join(input))
+        return HtmlHelper.tag('ul', ''.join(options))
 
 
 class CheckBoxField(Field):
