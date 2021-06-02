@@ -1,6 +1,7 @@
 import re
 import copy
 from django.db.models import QuerySet
+from django.db.models.manager import Manager
 from .html import HtmlHelper
 
 
@@ -216,6 +217,10 @@ class NestedFormField(Field):
                 try:
                     instance = instance.get()
                 except f.related_model.DoesNotExist:
+                    instance = f.related_model()
+            elif isinstance(instance, Manager):
+                instance = instance.first()
+                if instance is None:
                     instance = f.related_model()
         else:
             instance = f.related_model()
