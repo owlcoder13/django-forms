@@ -337,6 +337,8 @@ class Form(object, metaclass=FormMeta):
     Main form class
     """
 
+    error_required_message = 'Field %s is required'
+
     def __init__(self, instance=None, data=None, files=None, parent_form=None, fields=None, prefix='', template=None,
                  renderer_class=BootstrapFormRenderer):
         self.template = template if template is not None else 'forms/form.html'
