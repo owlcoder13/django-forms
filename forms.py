@@ -1,6 +1,7 @@
 import re
 import copy
 from django.db.models import QuerySet
+from django.db.models.manager import Manager
 from .html import HtmlHelper
 
 
@@ -217,6 +218,10 @@ class NestedFormField(Field):
                     instance = instance.get()
                 except f.related_model.DoesNotExist:
                     instance = f.related_model()
+            elif isinstance(instance, Manager):
+                instance = instance.first()
+                if instance is None:
+                    instance = f.related_model()
         else:
             instance = f.related_model()
 
@@ -228,7 +233,8 @@ class NestedFormField(Field):
         )
 
     def render_control(self, extra_attributes=None):
-        return self.nested_form.render()
+        return HtmlHelper.tag('div', self.nested_form.render(),
+                              {"style": "border-left: 4px solid #eee; padding-left: 20px;"})
 
     def apply(self):
         pass
@@ -243,6 +249,10 @@ class NestedFormField(Field):
     def set_relative_fields(self, instance):
         f = self.form.instance._meta.get_field(self.attribute)
         setattr(instance, f.field.name, self.form.instance)
+
+    @property
+    def js(self):
+        return self.nested_form.js
 
 
 class GenericNestedForm(NestedFormField):
@@ -512,9 +522,9 @@ class BooleanField(Field):
 
 
 class CheckBoxListField(Field):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, options=None, **kwargs):
+        self.options = options or list()
         super(CheckBoxListField, self).__init__(*args, **kwargs)
-        self.template = 'forms/checkbox-list-field.html'
 
     def create_context(self):
         context = super(CheckBoxListField, self).create_context()
@@ -531,6 +541,28 @@ class CheckBoxListField(Field):
         })
 
         return context
+
+    def get_options(self):
+        return self.options
+
+    def load(self, data=None, files=None):
+        pass
+
+    def render_control(self, extra_attributes=None):
+        options = list()
+
+        attr_name = self.name
+
+        for id, name in self.get_options():
+            input = HtmlHelper.tag('input', '', {
+                "type": "checkbox",
+                "value": id,
+                "name": attr_name,
+                "checked": id in self.value
+            }) + ' ' + str(name)
+            options.append(HtmlHelper.tag('li', input))
+
+        return HtmlHelper.tag('ul', ''.join(options))
 
 
 class CheckBoxField(Field):
@@ -605,7 +637,8 @@ class FormsetField(Field):
             'class': 'container'})
         hidden = HtmlHelper.tag('div', hidden_form, {'class': 'hidden'})
 
-        return HtmlHelper.tag('div', container + hidden + buttons, self.collect_attributes({'id': self.id}))
+        return HtmlHelper.tag('div', container + hidden + buttons,
+                              self.collect_attributes({'id': self.id}))
 
     def get_max_index(self):
         form_indexes = [int(a) for a in self.forms.keys()]
@@ -629,9 +662,9 @@ class FormsetField(Field):
     def js(self):
         return '''
             let i = {max_index};
-            let container = $('#{id} > .container')
-            let button = $('#{id} > .add');
-            let hidden = $('#{id} > .hidden');
+            let container = $(el).find('> .container')
+            let button = $(el).find('> .add');
+            let hidden = $(el).find('> .hidden');
             
             {forms_js}
             
@@ -655,7 +688,10 @@ class FormsetField(Field):
                 newForm.find('[name], [id]').each((index, item) => {{
                     ['name', 'id'].forEach(attr => {{
                         if($(item).attr(attr)){{
-                            $(item).attr(attr, $(item).attr(attr).replace(/__index__/g, i))
+                            let newAttr = $(item).attr(attr).replace(/__index__/, i);
+                            console.log('was value', $(item).attr(attr), 'replace with', newAttr)
+                            
+                            $(item).attr(attr, newAttr)
                         }}
                     }})
                 }})
@@ -670,6 +706,8 @@ class FormsetField(Field):
                 container.append(newForm);
                 
                 {init_nested_field}
+                
+                console.log('index', i)
                 
                 i++;
             }})
@@ -696,6 +734,9 @@ class FormsetField(Field):
         return instance
 
     def load(self, data=None, files=None):
+        self.data = data
+        self.files = files
+
         prefix_pattern = self.nested_form_prefix('__index__')
         pattern = re.escape(prefix_pattern)
         pattern = '^' + pattern.replace('__index__', '(\\d+)')
@@ -708,7 +749,6 @@ class FormsetField(Field):
                 index = groups.group(1)
                 if index not in forms_indexes:
                     forms_indexes.append(index)
-        print('form indexes', forms_indexes)
 
         new_forms = dict()
 
@@ -884,5 +924,6 @@ class EditorField(TextAreaField):
         return "CKEDITOR.replace(el[0]);"
 
 
-def ImageField(label):
-    return None
+def generate_form_class(fields, base_class=Form):
+    """Create form class dynamically from fields"""
+    return type('_Form', (base_class,), fields)
