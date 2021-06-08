@@ -461,6 +461,9 @@ class Form(object, metaclass=FormMeta):
 
         return out
 
+    def to_dict(self):
+        return {field_name: field.value for field_name, field in self.fields.items()}
+
 
 class HiddenIdField(Field):
     def apply(self):
