@@ -98,3 +98,9 @@ class HtmlHelper(object):
         })
 
         return cls.tag('select', ''.join(render_options), attributes)
+
+    @classmethod
+    def img(cls, src, alt='', options=None):
+        options = options or dict()
+        options.update({'src': src, 'alt': alt})
+        return cls.tag('img', None, options)
