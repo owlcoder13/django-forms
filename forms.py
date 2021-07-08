@@ -454,7 +454,12 @@ class Form(object, metaclass=FormMeta):
                 valid = False
                 self.add_field_error(f.name, str(err))
 
+        self.custom_validation()
+
         return valid and len(self.errors.items()) == 0
+
+    def custom_validation(self):
+        pass
 
     def __str__(self):
         return self.render()
