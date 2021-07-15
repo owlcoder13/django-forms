@@ -929,3 +929,11 @@ class EditorField(TextAreaField):
 def generate_form_class(fields, base_class=Form):
     """Create form class dynamically from fields"""
     return type('_Form', (base_class,), fields)
+
+
+class ReadOnlyField(Field):
+    def apply(self):
+        pass
+
+    def load(self, data=None, files=None):
+        pass
