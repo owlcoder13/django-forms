@@ -29,8 +29,24 @@ class FormMeta(type):
             if isinstance(v, Field):
                 found_fields[k] = v
 
+        attrs['found_fields'] = found_fields
+
         new_class = super().__new__(mcs, name, bases, attrs)
-        new_class.found_fields = found_fields
+
+        parent_fields = {}
+
+        for base in reversed(new_class.__mro__):
+            # Collect fields from base class.
+            if hasattr(base, 'found_fields'):
+                parent_fields.update(base.found_fields)
+
+            # Disable reordered fields.
+            for attr, value in base.__dict__.items():
+                if value is None and attr in parent_fields:
+                    parent_fields.pop(attr)
+
+        new_class.base_fields = parent_fields
+        new_class.found_fields = parent_fields
 
         return new_class
 
@@ -438,7 +454,12 @@ class Form(object, metaclass=FormMeta):
                 valid = False
                 self.add_field_error(f.name, str(err))
 
+        self.custom_validation()
+
         return valid and len(self.errors.items()) == 0
+
+    def custom_validation(self):
+        pass
 
     def __str__(self):
         return self.render()
