@@ -87,7 +87,7 @@ class HtmlHelper(object):
 
         for key, text in options:
             option = HtmlHelper.tag('option', text, {
-                "value": key, "selected": value == key
+                "value": key, "selected": str(value) == str(key)
             })
             render_options.append(option)
 
