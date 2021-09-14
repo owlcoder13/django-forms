@@ -958,3 +958,26 @@ class ReadOnlyField(Field):
 
     def load(self, data=None, files=None):
         pass
+
+
+class TextField(InputField):
+    def __init__(self, *args,
+                 min_length=None,
+                 max_length=None,
+                 **kwargs):
+
+        self.min_length = min_length
+        self.max_length = max_length
+
+        self.min_length_error_message = 'Minimum length of %s is %d'
+        self.max_length_error_message = 'Maximum length of %s is %d'
+
+        kwargs['input_type'] = 'text'
+        super().__init__(*args, **kwargs)
+
+    def validate(self):
+        if self.min_length and len(self.value) < self.min_length:
+            raise ValidationError(self.min_length_error_message % (self.label, self.min_length))
+
+        if self.max_length and len(self.value) < self.max_length:
+            raise ValidationError(self.max_length_error_message % (self.label, self.max_length))
