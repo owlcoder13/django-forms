@@ -222,8 +222,10 @@ class NestedFormField(Field):
         super().__init__(*args, **kwargs)
 
         self.form_class = form_class
+        self.nested_form = None
 
     def fetch(self):
+        """ Fetch nested object from instance """
         f = self.form.instance._meta.get_field(self.attribute)
 
         if hasattr(self.instance, f.name):
