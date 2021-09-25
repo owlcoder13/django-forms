@@ -551,27 +551,27 @@ class CheckBoxListField(Field):
         self.options = options or list()
         super(CheckBoxListField, self).__init__(*args, **kwargs)
 
-    def create_context(self):
-        context = super(CheckBoxListField, self).create_context()
-        f = self.instance._meta.get_field(self.attribute)
-        related_model = f.related_model()
-        variants = related_model.__class__.objects.all()
-        variants = [{'label': v.name, 'value': v.id} for v in variants]
-
-        checked = []
-
-        context.update({
-            'checkboxes': variants,
-            'checked': checked,
-        })
-
-        return context
+    # def create_context(self):
+    #     context = super(CheckBoxListField, self).create_context()
+    #     f = self.instance._meta.get_field(self.attribute)
+    #     related_model = f.related_model()
+    #     variants = related_model.__class__.objects.all()
+    #     variants = [{'label': v.name, 'value': v.id} for v in variants]
+    #
+    #     checked = []
+    #
+    #     context.update({
+    #         'checkboxes': variants,
+    #         'checked': checked,
+    #     })
+    #
+    #     return context
 
     def get_options(self):
         return self.options
 
-    def load(self, data=None, files=None):
-        pass
+    # def load(self, data=None, files=None):
+    #     pass
 
     def render_control(self, extra_attributes=None):
         options = list()
@@ -588,6 +588,46 @@ class CheckBoxListField(Field):
             options.append(HtmlHelper.tag('li', input))
 
         return HtmlHelper.tag('ul', ''.join(options))
+
+
+class ManyToManyCheckBoxListField(CheckBoxListField):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.local_field = None
+        self.related_field = None
+        self.remote_model_id_field = None
+
+    def fetch(self):
+        self.local_field = self.instance._meta.get_field(self.attribute)
+        self.remote_field = self.local_field.remote_field
+
+        self.remote_model_id_field = self.local_field.target_field.name.split('.')[-1]
+
+        if self.options is True:
+            all_related_class_models = self.local_field.related_model.objects.all()
+            self.options = [
+                (
+                    getattr(a, self.remote_model_id_field),
+                    getattr(a, self.remote_model_id_field)
+                )
+                for a in all_related_class_models
+            ]
+
+        self.value = [getattr(a, self.remote_model_id_field) for a in getattr(self.instance, self.attribute).all()]
+
+    def apply(self):
+        pass
+
+    def after_save(self):
+        categories = self.local_field.related_model.objects.filter(id__in=self.value)
+        getattr(self.instance, self.attribute).set(categories)
+
+    def set_value_from_data(self):
+        key = self.prefix + self.attribute
+        self.value = self.data[key] if key in self.data else None
+        if self.value is None:
+            self.value = list()
 
 
 class CheckBoxField(Field):
