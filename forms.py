@@ -199,6 +199,10 @@ class IntegerField(Field):
 
             raise ValidationError(error_message % self.label)
 
+    def apply(self):
+        self.value = int(self.value)
+        super(IntegerField, self).apply()
+
     # def apply(self):
     #     try:
     #         setattr(self.instance, self.attribute, int(self.value))
