@@ -978,6 +978,8 @@ class TextField(InputField):
         super().__init__(*args, **kwargs)
 
     def validate(self):
+        super(TextField, self).validate()
+
         if self.min_length and len(self.value) < self.min_length:
             raise ValidationError(self.min_length_error_message % (self.label, self.min_length))
 
