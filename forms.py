@@ -627,7 +627,13 @@ class ManyToManyCheckBoxListField(CheckBoxListField):
                 for a in all_related_class_models
             ]
 
-        self.value = [getattr(a, self.remote_model_id_field) for a in getattr(self.instance, self.attribute).all()]
+        value = []
+
+        if self.instance.id:
+            for a in getattr(self.instance, self.attribute).all():
+                value.append(getattr(a, self.remote_model_id_field))
+
+        self.value = value
 
     def apply(self):
         pass
