@@ -58,7 +58,7 @@ class Field(object):
 
     def __init__(self, files=None, data=None, instance=None, label=None,
                  attributes=None, attribute=None, form=None,
-                 input_type='text', required=False, apply=True, default_value=None):
+                 input_type='text', required=False, apply=True, default_value=None, null_if_empty=False):
         self.instance = instance
         self.data = data
         self.files = files
@@ -75,11 +75,20 @@ class Field(object):
         self.can_apply = apply
         self.default_value = default_value
 
+        # When value from form is empty (empty string) the property of model while apply becomes None
+        self.null_if_empty = null_if_empty
+
         self.attributes = attributes or dict()
 
     def apply(self):
         if self.can_apply:
-            setattr(self.instance, self.attribute, self.value)
+
+            if self.null_if_empty:
+                value = None if self.value == '' else self.value
+            else:
+                value = self.value
+
+            setattr(self.instance, self.attribute, value)
 
     def init(self):
         pass
