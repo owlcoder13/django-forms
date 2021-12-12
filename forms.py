@@ -82,12 +82,7 @@ class Field(object):
 
     def apply(self):
         if self.can_apply:
-
-            if self.null_if_empty:
-                value = None if self.value == '' else self.value
-            else:
-                value = self.value
-
+            value = self.value
             setattr(self.instance, self.attribute, value)
 
     def init(self):
@@ -160,6 +155,9 @@ class Field(object):
         key = self.prefix + self.attribute
         self.value = self.data[key] if key in self.data else None
 
+        if self.value == '' and self.null_if_empty:
+            self.value = None
+
     def before_save(self):
         pass
 
@@ -199,7 +197,8 @@ class IntegerField(Field):
 
     def validate(self):
         try:
-            int(self.value)
+            if self.value is not None:
+                int(self.value)
         except ValueError:
             if self.form is not None:
                 error_message = self.form.error_integer_message
@@ -209,8 +208,11 @@ class IntegerField(Field):
             raise ValidationError(error_message % self.label)
 
     def apply(self):
-        self.value = int(self.value)
-        super(IntegerField, self).apply()
+        try:
+            self.value = int(self.value)
+            super(IntegerField, self).apply()
+        except TypeError:
+            pass
 
     # def apply(self):
     #     try:
