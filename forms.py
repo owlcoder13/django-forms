@@ -85,6 +85,10 @@ class Field(object):
             value = self.value
             setattr(self.instance, self.attribute, value)
 
+    @property
+    def dict_value(self):
+        return self.value
+
     def init(self):
         pass
 
@@ -238,6 +242,10 @@ class NestedFormField(Field):
 
         self.form_class = form_class
         self.nested_form = None
+
+    @property
+    def dict_value(self):
+        return self.nested_form.to_dict()
 
     def fetch(self):
         """ Fetch nested object from instance """
@@ -512,7 +520,7 @@ class Form(object, metaclass=FormMeta):
         return out
 
     def to_dict(self):
-        return {field_name: field.value for field_name, field in self.fields.items()}
+        return {field_name: field.dict_value for field_name, field in self.fields.items()}
 
 
 class HiddenIdField(Field):
